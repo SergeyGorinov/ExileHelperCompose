@@ -23,8 +23,9 @@ class GetFilterData(private val repository: Repository) {
         return filters.map {
             InnerFilterData(
                 id = it.id,
-                text = it.text,
-                options = mapOptions(it.options),
+                title = it.text,
+                placeholder = it.input?.placeholder ?: "",
+                options = mapOptions(it.option),
                 isMinMax = it.minMax != null,
                 isSockets = it.sockets != null
             )

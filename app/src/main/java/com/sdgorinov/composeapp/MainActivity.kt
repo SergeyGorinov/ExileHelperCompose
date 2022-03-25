@@ -18,31 +18,33 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.sdgorinov.composeapp.ui.theme.*
 import com.sgorinov.exilehelper.core.presentation.models.FilterOptionData
-import com.sgorinov.exilehelper.currency_feature.presentation.CurrencyFeatureContent
-import com.sgorinov.exilehelper.currency_feature.presentation.Groups
 import org.koin.androidx.compose.getViewModel
 
 class MainActivity : ComponentActivity() {
 
-    @OptIn(ExperimentalAnimationApi::class, ExperimentalAnimationGraphicsApi::class)
+    @OptIn(
+        ExperimentalAnimationApi::class,
+        ExperimentalAnimationGraphicsApi::class,
+        ExperimentalMaterialApi::class
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -53,52 +55,51 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    fun MainContent(items: List<Screen>) {
-        val navController = rememberNavController()
-        Scaffold(
-            bottomBar = {
-                BottomNavigation {
-                    val backStackEntry by navController.currentBackStackEntryAsState()
-                    val currentDestination = backStackEntry?.destination
-                    items.forEach { screen ->
-                        BottomNavigationItem(
-                            selected = currentDestination?.hierarchy?.any {
-                                it.route == screen.route
-                            } == true,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = {
-                                Icon(imageVector = Icons.Filled.Favorite, contentDescription = null)
-                            },
-                            label = {
-                                Text(text = screen.label)
-                            }
-                        )
-                    }
-                }
-            }
-        ) {
-            NavHost(navController, startDestination = Screen.Screen1.route, Modifier.padding(it)) {
-                composable(Screen.Screen1.route) { Groups() }
-                composable(Screen.Screen2.route) { CurrencyFeatureContent() }
-            }
-        }
-    }
+//    @Composable
+//    fun MainContent(items: List<Screen>) {
+//        val navController = rememberNavController()
+//        Scaffold(
+//            bottomBar = {
+//                BottomNavigation {
+//                    val backStackEntry by navController.currentBackStackEntryAsState()
+//                    val currentDestination = backStackEntry?.destination
+//                    items.forEach { screen ->
+//                        BottomNavigationItem(
+//                            selected = currentDestination?.hierarchy?.any {
+//                                it.route == screen.route
+//                            } == true,
+//                            onClick = {
+//                                navController.navigate(screen.route) {
+//                                    popUpTo(navController.graph.findStartDestination().id) {
+//                                        saveState = true
+//                                    }
+//                                    launchSingleTop = true
+//                                    restoreState = true
+//                                }
+//                            },
+//                            icon = {
+//                                Icon(imageVector = Icons.Filled.Favorite, contentDescription = null)
+//                            },
+//                            label = {
+//                                Text(text = screen.label)
+//                            }
+//                        )
+//                    }
+//                }
+//            }
+//        ) {
+//            NavHost(navController, startDestination = Screen.Screen1.route, Modifier.padding(it)) {
+//                composable(Screen.Screen1.route) { Groups() }
+//                composable(Screen.Screen2.route) { CurrencyFeatureContent() }
+//            }
+//        }
+//    }
 
+    @ExperimentalMaterialApi
     @ExperimentalAnimationGraphicsApi
-    @ExperimentalAnimationApi
     @Composable
     fun TestContent() {
         val viewModel = getViewModel<MainViewModel>()
-        viewModel.requestFilterData()
         val filtersData = viewModel.filterDataState.collectAsState()
         Scaffold(backgroundColor = DefaultDark) {
             LazyColumn(
@@ -116,28 +117,24 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     item {
-                        Spacer(modifier = Modifier.height(4.dp))
                         Divider(
                             color = DefaultLight,
                             thickness = 1.dp,
-                            modifier = Modifier.padding(start = 4.dp)
+                            modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 4.dp)
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
                     }
-                    items(data.filters) {
+                    items(data.filters) { innerFilterData ->
                         InnerFilterItem(
-                            id = it.id,
-                            label = it.text,
-                            options = it.options,
-                            isMinMax = it.isMinMax,
-                            minState = it.minState,
-                            maxState = it.maxState,
-                            isSockets = it.isSockets,
+                            label = innerFilterData.title,
+                            options = innerFilterData.options,
+                            isSockets = innerFilterData.isSockets,
                             expandedState = data.expanded,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(32.dp)
-                                .padding(bottom = 2.dp)
+                                .padding(bottom = 2.dp),
+                            inputStates = innerFilterData.inputStates,
+                            selectedOption = innerFilterData.selectedOption
                         )
                     }
                 }
@@ -188,17 +185,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @ExperimentalMaterialApi
     @Composable
     fun InnerFilterItem(
-        id: String,
         label: String,
         options: List<FilterOptionData>?,
-        isMinMax: Boolean,
-        minState: MutableState<String>,
-        maxState: MutableState<String>,
         isSockets: Boolean,
         expandedState: MutableState<Boolean>,
-        modifier: Modifier
+        modifier: Modifier = Modifier,
+        inputStates: Map<String, MutableState<String>>? = null,
+        selectedOption: MutableState<FilterOptionData>? = null,
     ) {
         val expanded by remember {
             expandedState
@@ -206,8 +202,8 @@ class MainActivity : ComponentActivity() {
 
         AnimatedVisibility(visible = expanded) {
             Row(modifier = modifier) {
-                Box(
-                    contentAlignment = Alignment.CenterStart,
+                FilterHeader(
+                    text = label,
                     modifier = Modifier
                         .background(Default)
                         .fillMaxHeight()
@@ -220,27 +216,28 @@ class MainActivity : ComponentActivity() {
                                 2f * density
                             )
                         }
-                ) {
-                    Text(
-                        text = label,
-                        modifier = Modifier.padding(start = 10.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                if (isMinMax) {
-                    MinMaxFilter(
-                        minState = minState,
-                        maxState = maxState,
+                )
+                if (inputStates != null) {
+                    FlexibleTextInputFilter(
+                        inputStates = inputStates,
                         modifier = Modifier
                             .fillMaxHeight()
-                            .fillMaxWidth()
-                            .padding(start = 2.dp),
-                        textFieldModifier = Modifier
-                            .fillMaxHeight()
-                            .padding(end = 1.dp)
+                            .padding(start = 2.dp)
                             .weight(1f)
-                            .background(DefaultLight)
+                            .background(DefaultLight),
+                        isSockets = isSockets
+                    )
+                }
+                if (options != null) {
+                    ExposedAutoCompleteTextField(
+                        options = options,
+                        selectedOptionState = selectedOption ?: remember {
+                            mutableStateOf(options.first())
+                        },
+                        modifier = Modifier
+                            .padding(start = 2.dp)
+                            .clip(shape = Shapes.large)
+                            .background(Default)
                     )
                 }
             }
@@ -248,54 +245,183 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun MinMaxFilter(
-        minState: MutableState<String>,
-        maxState: MutableState<String>,
-        modifier: Modifier = Modifier,
-        textFieldModifier: Modifier = Modifier
+    fun FilterHeader(
+        text: String,
+        modifier: Modifier = Modifier
     ) {
-        Row(modifier = modifier) {
-            MinMaxTextField(
-                state = minState,
-                placeholder = "MIN",
-                modifier = textFieldModifier
-            )
-            MinMaxTextField(
-                state = maxState,
-                placeholder = "MAX",
-                modifier = textFieldModifier
+        Box(
+            contentAlignment = Alignment.CenterStart,
+            modifier = modifier
+        ) {
+            Text(
+                text = text,
+                modifier = Modifier.padding(start = 10.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
 
     @Composable
-    fun MinMaxTextField(
-        state: MutableState<String>,
+    fun FlexibleTextInputFilter(
+        inputStates: Map<String, MutableState<String>>,
+        modifier: Modifier = Modifier,
+        isSockets: Boolean = false
+    ) {
+        inputStates.forEach { (placeholder, inputState) ->
+            PlaceholderTextInput(
+                inputState = inputState,
+                placeholder = placeholder,
+                modifier = modifier.padding(end = 2.dp),
+                isSockets = isSockets
+            )
+        }
+    }
+
+    @Composable
+    fun PlaceholderTextInput(
+        inputState: MutableState<String>,
         placeholder: String,
-        modifier: Modifier
+        modifier: Modifier = Modifier,
+        isSockets: Boolean = false
     ) {
         var data by remember {
-            state
+            inputState
         }
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Box(
+            modifier = modifier.drawBehind {
+                if (isSockets) {
+                    val color = when (placeholder.lowercase()) {
+                        "r" -> Color.Red
+                        "g" -> Color.Green
+                        "b" -> Color.Blue
+                        "w" -> Color.White
+                        else -> return@drawBehind
+                    }
+                    val strokeWidth = 1f
+                    drawLine(
+                        color = color,
+                        start = Offset(0f, size.height - strokeWidth),
+                        end = Offset(size.width, size.height - strokeWidth),
+                        strokeWidth = strokeWidth * density
+                    )
+                }
+            },
+            contentAlignment = Alignment.Center
+        ) {
             BasicTextField(
                 value = data,
-                onValueChange = {
-                    data = it
-                },
+                onValueChange = { data = it },
                 singleLine = true,
                 cursorBrush = SolidColor(Text),
-                textStyle = DefaultFont.body1,
+                textStyle = DefaultFont.body1.copy(textAlign = TextAlign.Center),
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
             if (data.isBlank()) {
-                Text(text = placeholder, color = SecondaryLight)
+                Text(text = placeholder.uppercase(), color = SecondaryLight)
             }
         }
     }
 
-    sealed class Screen(val route: String, val label: String) {
-        object Screen1 : Screen("screen_1", "Screen 1")
-        object Screen2 : Screen("screen_2", "Screen 2")
+    @ExperimentalMaterialApi
+    @Composable
+    fun ExposedAutoCompleteTextField(
+        options: List<FilterOptionData>,
+        selectedOptionState: MutableState<FilterOptionData>,
+        modifier: Modifier = Modifier
+    ) {
+        var dropdownExpanded by remember {
+            mutableStateOf(false)
+        }
+        var selectedOption by remember {
+            selectedOptionState
+        }
+        var selectedText by remember {
+            mutableStateOf(
+                TextFieldValue(
+                    text = selectedOption.text,
+                    selection = TextRange(selectedOption.text.length)
+                )
+            )
+        }
+
+        ExposedDropdownMenuBox(
+            expanded = dropdownExpanded,
+            onExpandedChange = { dropdownExpanded = !dropdownExpanded },
+            modifier = modifier
+        ) {
+            val icon = if (dropdownExpanded) {
+                Icons.Filled.ArrowDropUp
+            } else {
+                Icons.Filled.ArrowDropDown
+            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Default)
+            ) {
+                BasicTextField(
+                    value = selectedText,
+                    onValueChange = { selectedText = it },
+                    singleLine = true,
+                    cursorBrush = SolidColor(Text),
+                    textStyle = DefaultFont.body1.copy(textAlign = TextAlign.Center),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 2.dp)
+                        .padding(start = 4.dp, end = 4.dp + icon.defaultWidth)
+                        .align(Alignment.Center)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused && !dropdownExpanded) {
+                                dropdownExpanded = true
+                            }
+                        }
+                )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Text,
+                    modifier = Modifier.align(
+                        Alignment.CenterEnd
+                    )
+                )
+            }
+
+            val filteredOptions = options.filter { option ->
+                option.text.contains(selectedText.text, ignoreCase = true)
+            }
+
+            if (filteredOptions.isNotEmpty()) {
+                ExposedDropdownMenu(
+                    expanded = dropdownExpanded,
+                    onDismissRequest = { dropdownExpanded = false },
+                    modifier = Modifier.background(Default)
+                ) {
+                    filteredOptions.forEach { filteredOption ->
+                        DropdownMenuItem(
+                            modifier = Modifier.background(Default),
+                            onClick = {
+                                selectedOption = filteredOption
+                                selectedText = TextFieldValue(
+                                    text = filteredOption.text,
+                                    selection = TextRange(filteredOption.text.length)
+                                )
+                                dropdownExpanded = false
+                            }
+                        ) {
+                            Text(
+                                text = filteredOption.text,
+                                style = DefaultFont.body1
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
+
+//    sealed class Screen(val route: String, val label: String) {
+//        object Screen1 : Screen("screen_1", "Screen 1")
+//        object Screen2 : Screen("screen_2", "Screen 2")
+//    }
 }

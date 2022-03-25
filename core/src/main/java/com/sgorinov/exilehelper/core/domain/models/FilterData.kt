@@ -18,8 +18,7 @@ data class FiltersData(
 data class FilterData(
     val id: String,
     val text: String,
-    val fullSpan: Int? = null,
-    val options: Options? = null,
+    val option: Options? = null,
     val minMax: Int? = null,
     val tip: String? = null,
     val sockets: Int? = null,
@@ -36,7 +35,7 @@ data class Options(
 
 @Serializable
 data class Option(
-    val id: String,
+    val id: String?,
     val text: String
 )
 
