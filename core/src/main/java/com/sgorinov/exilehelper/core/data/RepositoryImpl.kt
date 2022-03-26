@@ -1,6 +1,7 @@
 package com.sgorinov.exilehelper.core.data
 
 import com.sdgorinov.filters_parser.FiltersParser
+import com.sgorinov.exilehelper.core.data.models.*
 import com.sgorinov.exilehelper.core.data.models.Item
 import com.sgorinov.exilehelper.core.data.models.StaticDataResponseGroupItem
 import com.sgorinov.exilehelper.core.domain.Repository
@@ -61,6 +62,13 @@ internal class RepositoryImpl(
         }
 
         return cachedFiltersData
+    }
+
+    override suspend fun itemsSearchList(
+        data: SearchItemsRequest,
+        league: String
+    ): SearchItemsResponse {
+        return api.requestSearchItemsList(league, data)
     }
 
     private suspend fun getRawFilterData(url: String): String? {

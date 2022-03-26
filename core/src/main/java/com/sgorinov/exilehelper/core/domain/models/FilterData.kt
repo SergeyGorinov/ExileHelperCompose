@@ -29,9 +29,7 @@ data class FilterData(
 data class Options(
     val options: List<Option>? = null,
     val knownItem: KnownItems? = null
-) {
-
-}
+)
 
 @Serializable
 data class Option(

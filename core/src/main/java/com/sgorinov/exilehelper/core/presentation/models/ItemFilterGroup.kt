@@ -7,7 +7,7 @@ data class ItemFilterGroup(
     val id: String,
     val title: String,
     val filters: List<InnerFilterData>,
-    val expanded: MutableState<Boolean> = mutableStateOf(true),
+    val expanded: MutableState<Boolean> = mutableStateOf(false),
     val checked: MutableState<Boolean> = mutableStateOf(true)
 )
 
@@ -38,7 +38,7 @@ data class InnerFilterData(
         else -> null
     }
 
-    val selectedOption = if (options != null) mutableStateOf(options.first()) else null
+    val selectedOption = mutableStateOf<FilterOptionData?>(null)
 }
 
 data class FilterOptionData(

@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.runtime.*
@@ -37,8 +38,11 @@ import androidx.compose.ui.unit.dp
 import com.sdgorinov.composeapp.ui.theme.*
 import com.sgorinov.exilehelper.core.presentation.models.FilterOptionData
 import org.koin.androidx.compose.getViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
+
+    private val viewModel by viewModel<MainViewModel>()
 
     @OptIn(
         ExperimentalAnimationApi::class,
@@ -51,6 +55,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             ComposeAppTheme {
                 TestContent()
+                FloatingActionButton(onClick = { viewModel.onEvent(Event.SearchItems) }) {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                }
             }
         }
     }
@@ -194,7 +201,7 @@ class MainActivity : ComponentActivity() {
         expandedState: MutableState<Boolean>,
         modifier: Modifier = Modifier,
         inputStates: Map<String, MutableState<String>>? = null,
-        selectedOption: MutableState<FilterOptionData>? = null,
+        selectedOption: MutableState<FilterOptionData?> = mutableStateOf(null),
     ) {
         val expanded by remember {
             expandedState
@@ -231,9 +238,7 @@ class MainActivity : ComponentActivity() {
                 if (options != null) {
                     ExposedAutoCompleteTextField(
                         options = options,
-                        selectedOptionState = selectedOption ?: remember {
-                            mutableStateOf(options.first())
-                        },
+                        selectedOptionState = selectedOption,
                         modifier = Modifier
                             .padding(start = 2.dp)
                             .clip(shape = Shapes.large)
@@ -327,20 +332,20 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun ExposedAutoCompleteTextField(
         options: List<FilterOptionData>,
-        selectedOptionState: MutableState<FilterOptionData>,
+        selectedOptionState: MutableState<FilterOptionData?>,
         modifier: Modifier = Modifier
     ) {
         var dropdownExpanded by remember {
             mutableStateOf(false)
         }
         var selectedOption by remember {
-            selectedOptionState
+            mutableStateOf(options.firstOrNull { it.id == null })
         }
         var selectedText by remember {
             mutableStateOf(
                 TextFieldValue(
-                    text = selectedOption.text,
-                    selection = TextRange(selectedOption.text.length)
+                    text = selectedOption?.text ?: "",
+                    selection = TextRange(selectedOption?.text?.length ?: 0)
                 )
             )
         }
@@ -402,6 +407,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.background(Default),
                             onClick = {
                                 selectedOption = filteredOption
+                                selectedOptionState.value = filteredOption
                                 selectedText = TextFieldValue(
                                     text = filteredOption.text,
                                     selection = TextRange(filteredOption.text.length)
@@ -418,6 +424,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    sealed class Event {
+        object SearchItems : Event()
     }
 
 //    sealed class Screen(val route: String, val label: String) {
